@@ -1,6 +1,13 @@
 # What is this mod?
 ScoreboardTweaks is a simple (maybe) mod that changes your Scoreboard to be more comfortable and more understandable (MAYBE???)
 
+Changes:
+- Bigger text for buttons
+- Color square and Mute button (and also voice icon) are the same! To mute a player just press on a square!
+- Voice icon changes itself to "Voice Muted" icon
+- Report buttons changed their positions: under the Report button there is Cancel button (its more logical)
+- Report buttons are a bit gray (to split them from the other buttons that modders can add)
+
 ## Manual Installation
 Be sure that you are already installed BepInEx (using MonkeModManager for example). You need x64 version. [Take it there.](https://github.com/BepInEx/BepInEx/releases)
 
