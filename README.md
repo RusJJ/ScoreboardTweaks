@@ -24,5 +24,5 @@ Here are 3 functions for that. They should be in a mod-class:
  - void OnScoreboardTweakerProcessedPre(GameObject scoreboardLinePrefab) <- Will be called before ScoreboardTweaks does it's magic
  - void OnScoreboardTweakerProcessed(GameObject scoreboardLinePrefab) <- After
 
-## How that looks?
+## How that looks? (ignore green color of my name, that's a different mod)
 ![image](https://user-images.githubusercontent.com/8864329/125429323-6e4ffc6d-570f-4d69-8243-241f5d73bab6.png)
