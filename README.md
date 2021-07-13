@@ -8,4 +8,14 @@ Unpack downloaded ZIP Archive to your GorillaTag game folder and you're ready to
 
 If you're scared then copy DLL and PNG files to your Gorilla Tag/BepInEx/plugins folder somewhere (Gorilla Tag/BepInEx/ScoreboardTweaks/ for example).
 
+## For modders
+You can use that mod without hard dependency! You can work with those scoreboard buttons by your own if there's no ScoreboardTweakers installed.
+
+Here are 3 functions for that. They should be in a mod-class:
+
+ - void OnScoreboardTweakerStart() <- Will be called on ScoreboardTweaks::Start() so you know it's installed
+ - void OnScoreboardTweakerProcessedPre(GameObject scoreboardLinePrefab) <- Will be called before ScoreboardTweaks does it's magic
+ - void OnScoreboardTweakerProcessed(GameObject scoreboardLinePrefab) <- After
+
 ## How that looks?
+![image](https://user-images.githubusercontent.com/8864329/125429323-6e4ffc6d-570f-4d69-8243-241f5d73bab6.png)
