@@ -7,6 +7,7 @@ Changes:
 - Voice icon changes itself to "Voice Muted" icon
 - Report buttons changed their positions: under the Report button there is Cancel button (its more logical)
 - Report buttons are a bit gray (to split them from the other buttons that modders can add)
+- The buttons are now thinner
 
 ## Manual Installation
 Be sure that you are already installed BepInEx (using MonkeModManager for example). You need x64 version. [Take it there.](https://github.com/BepInEx/BepInEx/releases)
