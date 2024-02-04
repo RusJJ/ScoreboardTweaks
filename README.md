@@ -27,3 +27,5 @@ Here are 3 functions for that. They should be in a mod-class:
 
 ## How that looks? (ignore green color of my name, that's a different mod)
 ![image](https://user-images.githubusercontent.com/8864329/125429323-6e4ffc6d-570f-4d69-8243-241f5d73bab6.png)
+
+### <i>This product is not affiliated with Gorilla Tag or Another Axiom LLC and is not endorsed or otherwise sponsored by Another Axiom LLC. Portions of the materials contained herein are property of Another Axiom LLC. © 2021-2024 Another Axiom LLC.</i>
