@@ -52,7 +52,7 @@ namespace ScoreboardTweaks.Patches
 
             foreach (var plugin in Chainloader.PluginInfos.Values)
             {
-                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessedPre")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch (Exception e) { }
+                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessedPre")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch { }
             }
 
             Text tmpText;
@@ -185,7 +185,7 @@ namespace ScoreboardTweaks.Patches
 
             foreach (var plugin in Chainloader.PluginInfos.Values)
             {
-                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessed")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch (Exception e) { }
+                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessed")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch { }
             }
         }
     }
@@ -228,9 +228,9 @@ namespace ScoreboardTweaks.Patches
     {
         private static void Postfix(GorillaPlayerScoreboardLine __instance)
         {
-            if (__instance.playerVRRig.muted && __instance.speakerIcon.activeSelf != true)
+            if (__instance.playerVRRig.muted && __instance.speakerIcon.gameObject.activeSelf != true)
             {
-                __instance.speakerIcon.SetActive(true);
+                __instance.speakerIcon.gameObject.SetActive(true);
             }
         }
     }

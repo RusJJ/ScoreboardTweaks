@@ -29,7 +29,7 @@ namespace ScoreboardTweaks
         {
             foreach (var plugin in Chainloader.PluginInfos.Values)
             {
-                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerStart")?.Invoke(plugin.Instance, new object[] { }); } catch (Exception e) { }
+                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerStart")?.Invoke(plugin.Instance, new object[] { }); } catch { }
             }
 
             Texture2D tex = new Texture2D(2, 2);
