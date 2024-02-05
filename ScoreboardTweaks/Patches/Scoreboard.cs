@@ -2,6 +2,7 @@
 using HarmonyLib;
 using Photon.Pun;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,7 +17,7 @@ namespace ScoreboardTweaks.Patches
     {
         private static bool Prefix(GorillaScoreBoard __instance)
         {
-            __instance.boardText.text = "ROOM ID: " + ((PhotonNetwork.CurrentRoom == null || !PhotonNetwork.CurrentRoom.IsVisible) ? "-PRIVATE-" : PhotonNetwork.CurrentRoom.Name) + "\n  PLAYER STATUS            REPORT";
+            __instance.boardText.text = "ROOM ID: " + ((PhotonNetwork.CurrentRoom == null || !PhotonNetwork.CurrentRoom.IsVisible) ? "-PRIVATE- GAME MODE: " : (PhotonNetwork.CurrentRoom.Name + "    GAME MODE: ")) + __instance.RoomType() + "\n  PLAYER STATUS            REPORT";
             __instance.buttonText.text = "";
             __instance.lines.Sort((Comparison<GorillaPlayerScoreboardLine>)((line1, line2) => line1.playerActorNumber.CompareTo(line2.playerActorNumber)));
             for (int index = 0; index < __instance.lines.Count; ++index)
@@ -30,169 +31,180 @@ namespace ScoreboardTweaks.Patches
 
     /* Rebuilding buttons */
     [HarmonyPatch(typeof(GorillaScoreBoard))]
-    [HarmonyPatch("Awake", MethodType.Normal)]
-    internal class GorillaScoreBoardAwake
+    [HarmonyPatch("Start", MethodType.Normal)]
+    internal class GorillaScoreBoardStart
     {
-        public static bool initialized { get; internal set; } = false;
         //private static void Postfix(GorillaScoreBoard __instance)
         //{
         //    __instance.boardText.text = "ROOM ID: " + ((PhotonNetwork.CurrentRoom == null || !PhotonNetwork.CurrentRoom.IsVisible) ? "-PRIVATE-" : PhotonNetwork.CurrentRoom.Name) + "\n  PLAYER STATUS            REPORT";
         //}
         private static void Prefix(GorillaScoreBoard __instance)
         {
-            Main.m_listScoreboardTexts.Add(__instance.boardText);
-            __instance.boardText.transform.localPosition = new Vector3(
-                __instance.boardText.transform.localPosition.x,
-                __instance.boardText.transform.localPosition.y,
-                0.25f * __instance.boardText.transform.localPosition.z
+            try
+            {
+                if (ScoreboardTweaks.Main.m_listScoreboards.Contains(__instance)) return;
+                ScoreboardTweaks.Main.m_listScoreboards.Add(__instance);
+
+                Main.m_listScoreboardTexts.Add(__instance.boardText);
+                __instance.boardText.transform.localPosition = new Vector3
+                (
+                    __instance.boardText.transform.localPosition.x,
+                    __instance.boardText.transform.localPosition.y,
+                    0.25f * __instance.boardText.transform.localPosition.z
                 );
 
-            if (initialized) return;
-            initialized = true;
+                foreach (var plugin in Chainloader.PluginInfos.Values)
+                {
+                    try { if (plugin.Instance != ScoreboardTweaks.Main.m_hInstance) AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessedPre")?.Invoke(plugin.Instance, new object[] { __instance }); } catch { }
+                }
 
-            foreach (var plugin in Chainloader.PluginInfos.Values)
-            {
-                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessedPre")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch { }
+                Text tmpText;
+                int linesCount = __instance.lines.Count();
+                for (int i = 0; i < linesCount; ++i)
+                {
+                    foreach (Transform t in __instance.lines[i].transform)
+                    {
+                        if (t.name == "Player Name")
+                        {
+                            t.localPosition = new Vector3(-48.0f, 0.0f, 0.0f);
+                            t.gameObject.SetActive(true);
+                            //t.localScale = new Vector3(0.8f, 0.8f, 1.0f);
+                            continue;
+                        }
+                        if (t.name == "Color Swatch")
+                        {
+                            t.localPosition = new Vector3(-115.0f, 0.0f, 0.3f);
+                            continue;
+                        }
+                        if (t.name == "Mute Button")
+                        {
+                            t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.25f * t.localScale.z);
+                            tmpText = t.GetChild(0).GetComponent<Text>();
+                            tmpText.gameObject.SetActive(true); // GT 1.1.0
+                            tmpText.color = Color.clear;
+                            GameObject.Destroy(t.GetComponent<MeshRenderer>());
+
+                            t.GetChild(0).localScale = new Vector3(0.04f, 0.04f, 1.0f);
+                            continue;
+                        }
+                        if (t.name == "ReportButton")
+                        {
+                            t.GetChild(0).localScale = new Vector3(0.028f, 0.028f, 1.0f);
+                            t.localPosition = new Vector3(32.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
+
+                            // GT 1.1.0
+                            tmpText = t.GetChild(0).GetComponent<Text>();
+                            tmpText.gameObject.SetActive(true);
+                            // GT 1.1.0
+
+                            continue;
+                        }
+                        if (t.name == "gizmo-speaker")
+                        {
+                            if (Main.m_spriteGizmoOriginal == null) Main.m_spriteGizmoOriginal = t.GetComponent<SpriteRenderer>().sprite;
+                            t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(1.8f, 1.8f, 1.8f);
+                            continue;
+                        }
+                        if (t.name == "HateSpeech")
+                        {
+                            t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
+
+                            // GT 1.1.0
+                            tmpText = t.GetChild(0).GetComponent<Text>();
+                            tmpText.gameObject.SetActive(true);
+                            tmpText.GetComponent<Text>().text = "HATE\nSPEECH";
+                            // GT 1.1.0
+                            //t.GetChild(0).GetComponent<Text>().text = "HATE\nSPEECH";
+                            t.localPosition = new Vector3(46.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
+                            GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
+                            if (controller != null)
+                            {
+                                controller.offMaterial = new Material(controller.offMaterial);
+                                controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
+                                t.GetComponent<MeshRenderer>().material = controller.offMaterial;
+                            }
+                            continue;
+                        }
+                        if (t.name == "Toxicity")
+                        {
+                            t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
+                            // GT 1.1.0
+                            tmpText = t.GetChild(0).GetComponent<Text>();
+                            tmpText.gameObject.SetActive(true);
+                            tmpText.GetComponent<Text>().text = "TOXIC\nPERSON";
+                            // GT 1.1.0
+                            //t.GetChild(0).GetComponent<Text>().text = "TOXIC\nPERSON";
+                            t.localPosition = new Vector3(60.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
+                            GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
+                            if (controller != null)
+                            {
+                                controller.offMaterial = new Material(controller.offMaterial);
+                                controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
+                                t.GetComponent<MeshRenderer>().material = controller.offMaterial;
+                            }
+                            continue;
+                        }
+                        if (t.name == "Cheating")
+                        {
+                            t.GetChild(0).localScale = new Vector3(0.028f, 0.028f, 1.0f);
+                            // GT 1.1.0
+                            tmpText = t.GetChild(0).GetComponent<Text>();
+                            tmpText.gameObject.SetActive(true);
+                            tmpText.GetComponent<Text>().text = "CHEATER";
+                            // GT 1.1.0
+                            //t.GetChild(0).GetComponent<Text>().text = "CHEATER";
+                            t.localPosition = new Vector3(74.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
+                            GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
+                            if (controller != null)
+                            {
+                                controller.offMaterial = new Material(controller.offMaterial);
+                                controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
+                                t.GetComponent<MeshRenderer>().material = controller.offMaterial;
+                            }
+                            continue;
+                        }
+                        if (t.name == "Cancel")
+                        {
+                            // GT 1.1.0
+                            t.GetChild(0).GetComponent<Text>().gameObject.SetActive(true);
+                            // GT 1.1.0
+
+                            t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
+                            t.localPosition = new Vector3(32.0f, 0.0f, 0.0f);
+                            t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
+                            GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
+                            if (controller != null)
+                            {
+                                controller.offMaterial = new Material(controller.offMaterial);
+                                controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
+                                t.GetComponent<MeshRenderer>().material = controller.offMaterial;
+                            }
+                            continue;
+                        }
+                    }
+                }
+
+                foreach (var plugin in Chainloader.PluginInfos.Values)
+                {
+                    try { if (plugin.Instance != ScoreboardTweaks.Main.m_hInstance) AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessed")?.Invoke(plugin.Instance, new object[] { __instance }); } catch { }
+                }
             }
-
-            Text tmpText;
-            foreach (Transform t in __instance.scoreBoardLinePrefab.transform)
+            catch
             {
-                if (t.name == "Player Name")
-                {
-                    t.localPosition = new Vector3(-48.0f, 0.0f, 0.0f);
-                    t.gameObject.SetActive(true);
-                    //t.localScale = new Vector3(0.8f, 0.8f, 1.0f);
-                    continue;
-                }
-                if (t.name == "Color Swatch")
-                {
-                    t.localPosition = new Vector3(-115.0f, 0.0f, 0.3f);
-                    continue;
-                }
-                if (t.name == "Mute Button")
-                {
-                    t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.25f * t.localScale.z);
-                    tmpText = t.GetChild(0).GetComponent<Text>();
-                    tmpText.gameObject.SetActive(true); // GT 1.1.0
-                    tmpText.color = Color.clear;
-                    GameObject.Destroy(t.GetComponent<MeshRenderer>());
 
-                    t.GetChild(0).localScale = new Vector3(0.04f, 0.04f, 1.0f);
-                    continue;
-                }
-                if (t.name == "ReportButton")
-                {
-                    t.GetChild(0).localScale = new Vector3(0.028f, 0.028f, 1.0f);
-                    t.localPosition = new Vector3(32.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
-
-                    // GT 1.1.0
-                    tmpText = t.GetChild(0).GetComponent<Text>();
-                    tmpText.gameObject.SetActive(true);
-                    // GT 1.1.0
-
-                    continue;
-                }
-                if (t.name == "gizmo-speaker")
-                {
-                    Main.m_spriteGizmoOriginal = t.GetComponent<SpriteRenderer>().sprite;
-                    t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(1.8f, 1.8f, 1.8f);
-                    continue;
-                }
-                if (t.name == "HateSpeech")
-                {
-                    t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
-
-                    // GT 1.1.0
-                    tmpText = t.GetChild(0).GetComponent<Text>();
-                    tmpText.gameObject.SetActive(true);
-                    tmpText.GetComponent<Text>().text = "HATE\nSPEECH";
-                    // GT 1.1.0
-                    //t.GetChild(0).GetComponent<Text>().text = "HATE\nSPEECH";
-                    t.localPosition = new Vector3(46.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
-                    GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
-                    if (controller != null)
-                    {
-                        controller.offMaterial = new Material(controller.offMaterial);
-                        controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
-                        t.GetComponent<MeshRenderer>().material = controller.offMaterial;
-                    }
-                    continue;
-                }
-                if (t.name == "Toxicity")
-                {
-                    t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
-                    // GT 1.1.0
-                    tmpText = t.GetChild(0).GetComponent<Text>();
-                    tmpText.gameObject.SetActive(true);
-                    tmpText.GetComponent<Text>().text = "TOXIC\nPERSON";
-                    // GT 1.1.0
-                    //t.GetChild(0).GetComponent<Text>().text = "TOXIC\nPERSON";
-                    t.localPosition = new Vector3(60.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
-                    GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
-                    if (controller != null)
-                    {
-                        controller.offMaterial = new Material(controller.offMaterial);
-                        controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
-                        t.GetComponent<MeshRenderer>().material = controller.offMaterial;
-                    }
-                    continue;
-                }
-                if (t.name == "Cheating")
-                {
-                    t.GetChild(0).localScale = new Vector3(0.028f, 0.028f, 1.0f);
-                    // GT 1.1.0
-                    tmpText = t.GetChild(0).GetComponent<Text>();
-                    tmpText.gameObject.SetActive(true);
-                    tmpText.GetComponent<Text>().text = "CHEATER";
-                    // GT 1.1.0
-                    //t.GetChild(0).GetComponent<Text>().text = "CHEATER";
-                    t.localPosition = new Vector3(74.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
-                    GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
-                    if (controller != null)
-                    {
-                        controller.offMaterial = new Material(controller.offMaterial);
-                        controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
-                        t.GetComponent<MeshRenderer>().material = controller.offMaterial;
-                    }
-                    continue;
-                }
-                if (t.name == "Cancel")
-                {
-                    // GT 1.1.0
-                    t.GetChild(0).GetComponent<Text>().gameObject.SetActive(true);
-                    // GT 1.1.0
-
-                    t.GetChild(0).localScale = new Vector3(0.03f, 0.03f, 1.0f);
-                    t.localPosition = new Vector3(32.0f, 0.0f, 0.0f);
-                    t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.4f * t.localScale.z);
-                    GorillaPlayerLineButton controller = t.gameObject.GetComponent<GorillaPlayerLineButton>();
-                    if (controller != null)
-                    {
-                        controller.offMaterial = new Material(controller.offMaterial);
-                        controller.offMaterial.color = new Color(0.85f, 0.85f, 0.85f);
-                        t.GetComponent<MeshRenderer>().material = controller.offMaterial;
-                    }
-                    continue;
-                }
-            }
-
-            foreach (var plugin in Chainloader.PluginInfos.Values)
-            {
-                try { AccessTools.Method(plugin.Instance.GetType(), "OnScoreboardTweakerProcessed")?.Invoke(plugin.Instance, new object[] { __instance.scoreBoardLinePrefab }); } catch { }
             }
         }
     }
 
     /* Fixing log spamming from button's MeshRenderer deleted */
-    [HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
-    [HarmonyPatch("HideShowLine", MethodType.Normal)]
+    //[HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
+    //[HarmonyPatch("HideShowLine", MethodType.Normal)]
     internal class GorillaPlayerScoreboardLineHideShow
     {
         private static bool Prefix(Text[] ___texts, SpriteRenderer[] ___sprites, MeshRenderer[] ___meshes, Image[] ___images, bool active)
@@ -223,7 +235,7 @@ namespace ScoreboardTweaks.Patches
 
     /* Forcing a muted icon */
     [HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
-    [HarmonyPatch("Update", MethodType.Normal)]
+    [HarmonyPatch("UpdateLine", MethodType.Normal)]
     internal class GorillaPlayerScoreboardLineUpdate
     {
         private static void Postfix(GorillaPlayerScoreboardLine __instance)
@@ -258,8 +270,10 @@ namespace ScoreboardTweaks.Patches
         {
             if (!__instance.enabled || m_flNextPress > Time.time || __instance.touchTime + __instance.debounceTime >= Time.time) return false;
             m_flNextPress = Time.time + 0.05f;
+
             if (__instance.transform.name == "Mute Button")
             {
+                ScoreboardTweaks.Main.Log("Pressing mute button");
                 if (__instance.isOn) // Unmuting
                 {
                     __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoOriginal;

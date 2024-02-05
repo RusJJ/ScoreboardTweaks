@@ -19,6 +19,7 @@ namespace ScoreboardTweaks
         internal static Sprite m_spriteGizmoMuted = null;
         internal static Sprite m_spriteGizmoOriginal = null;
         internal static Material m_materialReportButtons = null;
+        public   static List<GorillaScoreBoard> m_listScoreboards = new List<GorillaScoreBoard>();
         internal static void Log(string msg) => m_hInstance.Logger.LogMessage(msg);
         void Awake()
         {
@@ -34,7 +35,7 @@ namespace ScoreboardTweaks
 
             Texture2D tex = new Texture2D(2, 2);
             var file = new FileInfo(AssemblyDirectory + "/gizmo-speaker-muted.png");
-            if (!file.Exists) { Log("MutedGizmo file doesn`t exists!"); return; }
+            if (!file.Exists) { Log("MutedGizmo icon file doesn`t exists!"); return; }
             tex.LoadImage(File.ReadAllBytes(file.FullName));
 
             m_spriteGizmoMuted = Sprite.Create(tex, new Rect(0.0f, 0.0f, 512.0f, 512.0f), new Vector2(0.5f, 0.5f), 100.0f);
@@ -61,13 +62,13 @@ namespace ScoreboardTweaks
         }
     }
 
-    [HarmonyPatch(typeof(PhotonNetwork))]
-    [HarmonyPatch("Disconnect", MethodType.Normal)]
+    //[HarmonyPatch(typeof(GorillaNetworking.PhotonNetworkController))]
+    //[HarmonyPatch("AttemptDisconnect", MethodType.Normal)]
     internal class OnRoomDisconnected
     {
         private static void Prefix()
         {
-            Main.m_listScoreboardTexts.Clear();
+            try { Main.m_listScoreboardTexts.Clear(); } catch { }
         }
     }
 }
