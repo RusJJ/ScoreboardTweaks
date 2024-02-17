@@ -19,7 +19,6 @@ namespace ScoreboardTweaks.Patches
         {
             __instance.boardText.text = "ROOM ID: " + ((PhotonNetwork.CurrentRoom == null || !PhotonNetwork.CurrentRoom.IsVisible) ? "-PRIVATE- GAME MODE: " : (PhotonNetwork.CurrentRoom.Name + "    GAME MODE: ")) + __instance.RoomType() + "\n  PLAYER STATUS            REPORT";
             __instance.buttonText.text = "";
-            __instance.lines.Sort((Comparison<GorillaPlayerScoreboardLine>)((line1, line2) => line1.playerActorNumber.CompareTo(line2.playerActorNumber)));
             for (int index = 0; index < __instance.lines.Count; ++index)
             {
                 __instance.lines[index].gameObject.GetComponent<RectTransform>().localPosition = new Vector3(0.0f, (float)(__instance.startingYValue - __instance.lineHeight * index), 0.0f);
@@ -189,6 +188,7 @@ namespace ScoreboardTweaks.Patches
                         }
                     }
                 }
+                __instance.RedrawPlayerLines();
 
                 foreach (var plugin in Chainloader.PluginInfos.Values)
                 {
@@ -202,40 +202,9 @@ namespace ScoreboardTweaks.Patches
         }
     }
 
-    /* Fixing log spamming from button's MeshRenderer deleted */
-    //[HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
-    //[HarmonyPatch("HideShowLine", MethodType.Normal)]
-    internal class GorillaPlayerScoreboardLineHideShow
-    {
-        private static bool Prefix(Text[] ___texts, SpriteRenderer[] ___sprites, MeshRenderer[] ___meshes, Image[] ___images, bool active)
-        {
-            foreach (Text text in ___texts)
-            {
-                if (text.enabled != active)
-                    text.enabled = active;
-            }
-            foreach (SpriteRenderer sprite in ___sprites)
-            {
-                if (sprite.enabled != active)
-                    sprite.enabled = active;
-            }
-            foreach (MeshRenderer mesh in ___meshes)
-            {
-                if (mesh != null && mesh.enabled != active)
-                    mesh.enabled = active;
-            }
-            foreach (Image image in ___images)
-            {
-                if (image.enabled != active)
-                    image.enabled = active;
-            }
-            return false;
-        }
-    }
-
     /* Forcing a muted icon */
-    [HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
-    [HarmonyPatch("UpdateLine", MethodType.Normal)]
+    //[HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
+    //[HarmonyPatch("UpdateLine", MethodType.Normal)]
     internal class GorillaPlayerScoreboardLineUpdate
     {
         private static void Postfix(GorillaPlayerScoreboardLine __instance)
@@ -254,13 +223,28 @@ namespace ScoreboardTweaks.Patches
     {
         private static bool Prefix(GorillaPlayerLineButton __instance)
         {
-            if (__instance.parentLine.muteButton == __instance) return false;
+            
+            if (__instance.parentLine.muteButton == __instance)
+            {
+                if(__instance.isOn)
+                {
+                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoMuted;
+                    __instance.parentLine.speakerIcon.gameObject.SetActive(true);
+                }
+                else
+                {
+                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoOriginal;
+                    __instance.parentLine.speakerIcon.gameObject.SetActive(false);
+                }
+
+                // This button has no mesh to update color!
+                return false;
+            }
             return true;
         }
     }
 
     /* Fixing "Cancel" pressed after "Report" pressing */
-    /* Changing mute icon! */
     [HarmonyPatch(typeof(GorillaPlayerLineButton))]
     [HarmonyPatch("OnTriggerEnter", MethodType.Normal)]
     internal class GorillaPlayerLineButtonTriggerEnter
@@ -271,19 +255,6 @@ namespace ScoreboardTweaks.Patches
             if (!__instance.enabled || m_flNextPress > Time.time || __instance.touchTime + __instance.debounceTime >= Time.time) return false;
             m_flNextPress = Time.time + 0.05f;
 
-            if (__instance.transform.name == "Mute Button")
-            {
-                ScoreboardTweaks.Main.Log("Pressing mute button");
-                if (__instance.isOn) // Unmuting
-                {
-                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoOriginal;
-                }
-                else // Muting
-                {
-                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoMuted;
-                }
-                return true;
-            }
             return true;
         }
     }
