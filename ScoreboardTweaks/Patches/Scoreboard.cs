@@ -77,14 +77,15 @@ namespace ScoreboardTweaks.Patches
                         }
                         if (t.name == "Mute Button")
                         {
-                            t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
+                            t.localRotation = Quaternion.identity;
                             t.localScale = new Vector3(t.localScale.x, t.localScale.y, 0.25f * t.localScale.z);
+                            t.localPosition = new Vector3(-115.0f, 0.0f, 0.0f);
                             tmpText = t.GetChild(0).GetComponent<Text>();
                             tmpText.gameObject.SetActive(true); // GT 1.1.0
                             tmpText.color = Color.clear;
                             GameObject.Destroy(t.GetComponent<MeshRenderer>());
 
-                            t.GetChild(0).localScale = new Vector3(0.04f, 0.04f, 1.0f);
+                            t.GetChild(0).localScale = new Vector3(0.04f, 0.04f, 1.2f);
                             continue;
                         }
                         if (t.name == "ReportButton")
@@ -203,15 +204,21 @@ namespace ScoreboardTweaks.Patches
     }
 
     /* Forcing a muted icon */
-    //[HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
-    //[HarmonyPatch("UpdateLine", MethodType.Normal)]
+    [HarmonyPatch(typeof(GorillaPlayerScoreboardLine))]
+    [HarmonyPatch("UpdateLine", MethodType.Normal)]
     internal class GorillaPlayerScoreboardLineUpdate
     {
         private static void Postfix(GorillaPlayerScoreboardLine __instance)
         {
-            if (__instance.playerVRRig.muted && __instance.speakerIcon.gameObject.activeSelf != true)
+            GorillaPlayerLineButton muteButton = __instance.muteButton;
+            if (muteButton.isOn)
             {
-                __instance.speakerIcon.gameObject.SetActive(true);
+                muteButton.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoMuted;
+                muteButton.parentLine.speakerIcon.enabled = true;
+            }
+            else
+            {
+                muteButton.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoOriginal;
             }
         }
     }
@@ -226,17 +233,6 @@ namespace ScoreboardTweaks.Patches
             
             if (__instance.parentLine.muteButton == __instance)
             {
-                if(__instance.isOn)
-                {
-                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoMuted;
-                    __instance.parentLine.speakerIcon.gameObject.SetActive(true);
-                }
-                else
-                {
-                    __instance.parentLine.speakerIcon.GetComponent<SpriteRenderer>().sprite = Main.m_spriteGizmoOriginal;
-                    __instance.parentLine.speakerIcon.gameObject.SetActive(false);
-                }
-
                 // This button has no mesh to update color!
                 return false;
             }
